@@ -1,0 +1,24 @@
+name: Linting
+on:
+  push:
+    paths:
+      - '.github/workflows/*'
+      - 'Dockerfile'
+      - 'entrypoint.sh'
+  workflow_dispatch:
+jobs:
+  lint:
+    name: Lint Checks
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.client_payload.branch }}
+    - name: Bash Lint check
+      uses: azohra/shell-linter@v0.6.0
+    - name: Dockerfile Lint
+      uses: ghe-actions/dockerfile-validator@v2
+      with:
+        dockerfile: 'Dockerfile'
+        lint: 'hadolint'
+        dockerlabelvalidate: 'yes'
