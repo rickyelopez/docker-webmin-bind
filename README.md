@@ -1,5 +1,14 @@
-# [eafxx/bind](https://hub.docker.com/r/eafxx/bind)
+# [rickyelopez/webmin-bind](https://hub.docker.com/r/rickyelopez/webmin-bind)
 
+A fork of [elmerfds/docker-bind](https://github.com/elmerfds/docker-bind),
+which is a fork of [sameersbn/bind](https://github.com/sameersbn/docker-bind).
+This fork simply updates the ubuntu, webmin, and bind versions used for the container.  
+
+**NOTE** This fork has **NOT** been tested extensively, or really even much at all. I'm using it, but that's pretty much it.  
+I make no claims that it is compatible with the `elmerfds` fork, or that it is stable in any capacity at all.  
+Use at your own peril. 
+
+## Notes from `elmerfds`' fork:
 A fork of [sameersbn/bind](https://github.com/sameersbn/docker-bind) repo, what's different?
 - Multiarch Support: 
   * amd64
@@ -11,7 +20,7 @@ A fork of [sameersbn/bind](https://github.com/sameersbn/docker-bind) repo, what'
 - Image auto-builds on schedule (every Sat 00:00 BST)
 - Ubuntu updates will be applied during each scheduled build
 - Reverse Proxy friendly ([utkuozdemir/docker-bind](https://github.com/utkuozdemir/docker-bind/tree/webmin-reverse-proxy-config))
-- Fixes to [utkuozdemir/docker-bind](https://github.com/utkuozdemir/docker-bind/tree/webmin-reverse-proxy-config)'s 'Reverse Proxy friendly' update. 
+- Fixes to [utkuozdemir/docker-bind](https://github.com/utkuozdemir/docker-bind/tree/webmin-reverse-proxy-config)'s 'Reverse Proxy friendly' update.
   * Cleanup of config & miniserv.conf when variables are used & then removed
   * Removing duplicate entries to config & miniserv.conf
  
@@ -31,25 +40,22 @@ BIND is open source software that implements the Domain Name System (DNS) protoc
 
 **Tags**
 
-| Tag      | Description                          | Build Status                                                                                                | 
+| Tag      | Description                          | Build Status                                                                                                |
 | ---------|--------------------------------------|-------------------------------------------------------------------------------------------------------------|
-| latest | master/stable                 | ![Docker Build Master](https://github.com/elmerfdz/docker-bind/workflows/Docker%20Build%20Master/badge.svg)  | 
-| dev | development, pre-release      | ![Docker Build Dev](https://github.com/elmerfdz/docker-bind/workflows/Docker%20Build%20Dev/badge.svg)     |
-| exp | unstable, experimental        | ![Docker Build Exp](https://github.com/elmerfdz/docker-bind/workflows/Docker%20Build%20Exp/badge.svg)   | 
+| latest | master/stable                 | ![Docker Build Master](https://github.com/elmerfdz/docker-bind/workflows/Docker%20Build%20Master/badge.svg)  |
 
 ## Installation
 
-Automated builds of the image are available on [Dockerhub](https://hub.docker.com/r/eafxx/bind) and is the recommended method of installation.
+Automated builds of the image are available on [Dockerhub](https://hub.docker.com/r/rickyelopez/webmin-bind) and is the recommended method of installation.
 
 ```bash
-docker pull eafxx/bind
+docker pull rickyelopez/webmin-bind
 ```
-OR
 
 Alternatively you can build the image yourself.
 
 ```bash
-docker build -t eafxx/bind github.com/eafxx/docker-bind
+docker build -t rickyelopez/webmin-bind github.com/rickyelopez/docker-webmin-bind
 ```
 
 ## Quickstart
@@ -60,7 +66,7 @@ Docker Run:
 docker run --name bind -d --restart=always \
   -p 53:53/tcp -p 53:53/udp -p 10000:10000/tcp \
   -v /path/to/bind/data:/data \
-  eafxx/bind
+  rickyelopez/webmin-bind
 ```
 
 OR
@@ -72,7 +78,7 @@ Docker Compose
         container_name: bind
         hostname: bind
         network_mode: bridge
-        image: eafxx/bind
+        image: rickyelopez/webmin-bind
         restart: unless-stopped
         ports:
             - "53:53/tcp"
