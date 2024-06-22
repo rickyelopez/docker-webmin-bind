@@ -1,41 +1,45 @@
-FROM ubuntu:hirsute AS add-apt-repositories
+FROM ubuntu:noble-20240605 AS add-apt-repositories
 
+# hadolint ignore=DL3008,DL3015
 RUN apt-get update \
- && apt-get upgrade -y \
- && DEBIAN_FRONTEND=noninteractive apt-get install -y gnupg --no-install-recommends \
- && apt-get install -y curl \
- && apt-key adv --fetch-keys https://www.webmin.com/jcameron-key.asc \
- && echo "deb https://download.webmin.com/download/repository sarge contrib" >> /etc/apt/sources.list
+    && apt-get upgrade -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y gnupg --no-install-recommends \
+    && apt-get install -y curl \
+    && apt-key adv --fetch-keys https://download.webmin.com/developers-key.asc \
+    && echo "deb https://download.webmin.com/download/newkey/repository stable contrib" >> /etc/apt/sources.list
 
-FROM ubuntu:hirsute
-LABEL maintainer="eafxx"
+FROM ubuntu:noble-20240605
 
-ENV BIND_USER=bind \
-    BIND_VERSION=9.16.8 \
-    #WEBMIN_VERSION=1.980 \
-    DATA_DIR=/data \
-    WEBMIN_INIT_SSL_ENABLED="" \
-    TZ=""    
-
-SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
-# hadolint ignore=DL3005,DL3008,DL3008 
-RUN  apt-get update \
- && apt-get upgrade -y \
- && apt-get install -y --no-install-recommends apt-transport-https ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+LABEL maintainer="rickyelopez"
 
 COPY --from=add-apt-repositories /etc/apt/trusted.gpg /etc/apt/trusted.gpg
-COPY --from=add-apt-repositories /etc/apt/sources.list /etc/apt/sources.list    
+COPY --from=add-apt-repositories /etc/apt/sources.list /etc/apt/sources.list
 
+ARG BIND_VERSION=1:9.18.24-0ubuntu5
+ARG WEBMIN_VERSION=2.111
+
+SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
+
+# hadolint ignore=DL3008
+RUN  apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+    apt-transport-https \
+    ca-certificates \
+    dnsutils \
+    tzdata \
+    cron \
+    && rm -rf /var/lib/apt/lists/*
+
+# hadolint ignore=DL3015
 RUN rm -rf /etc/apt/apt.conf.d/docker-gzip-indexes \
- && apt-get update \
- && apt-get upgrade -y \
- && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        tzdata \
-        bind9=1:${BIND_VERSION}* bind9-host=1:${BIND_VERSION}* dnsutils \
-        webmin \
-        #webmin=${WEBMIN_VERSION}* \
-&& rm -rf /var/lib/apt/lists/*
+    && apt-get update \
+    && apt-get upgrade -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    bind9=${BIND_VERSION} \
+    bind9-host=${BIND_VERSION} \
+    webmin=${WEBMIN_VERSION} \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY entrypoint.sh /sbin/entrypoint.sh
 

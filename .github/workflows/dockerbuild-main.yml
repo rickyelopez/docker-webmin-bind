@@ -1,10 +1,13 @@
-name: Docker Build Dev
+name: Docker Build Main
 on:
-  pull_request:
+  push:
     paths:
       - '.github/workflows/*'
       - 'Dockerfile'
       - 'entrypoint.sh'
+    branches:
+      - 'main'
+  workflow_dispatch:
 jobs:
   buildx:
     name: Buildx Multiarch Job
@@ -34,7 +37,13 @@ jobs:
         run: |
           docker buildx build \
           --platform linux/amd64,linux/arm64,linux/arm/v7 \
-          --tag ${{ secrets.DOCKER_USER }}/${{ secrets.DOCKER_REPO }}:dev \
-          --tag ${{ secrets.DOCKER_USER }}/${{ secrets.DOCKER_REPO }}:dev-${{ env.GITHUB_SHA_SHORT }} \
+          --tag ${{ secrets.DOCKER_USER }}/${{ secrets.DOCKER_REPO }}:latest \
+          --tag ${{ secrets.DOCKER_USER }}/${{ secrets.DOCKER_REPO }}:${{ env.GITHUB_SHA_SHORT }} \
           --push . \
           --file ./Dockerfile
+      - name: Update Dockerhub Description
+        uses: peter-evans/dockerhub-description@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PWD }}
+          repository: rickyelopez/docker-webmin-bind

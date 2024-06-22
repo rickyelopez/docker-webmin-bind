@@ -26,6 +26,8 @@ file_env() {
 
 file_env 'ROOT_PASSWORD'
 
+BIND_USER=${BIND_USER:-bind}
+BIND_GROUP=${BIND_GROUP:-bind}
 ROOT_PASSWORD=${ROOT_PASSWORD:-password}
 BIND_EXTRA_FLAGS=${BIND_EXTRA_FLAGS:--g}
 WEBMIN_ENABLED=${WEBMIN_ENABLED:-true}
@@ -34,6 +36,7 @@ WEBMIN_INIT_REDIRECT_PORT=${WEBMIN_INIT_REDIRECT_PORT:-10000}
 WEBMIN_INIT_REFERERS=${WEBMIN_INIT_REFERERS:-NONE}
 WEBMIN_INIT_REDIRECT_SSL=${WEBMIN_INIT_REDIRECT_SSL:-false}
 
+DATA_DIR=${DATA_DIR:-/data}
 BIND_DATA_DIR=${DATA_DIR}/bind
 WEBMIN_DATA_DIR=${DATA_DIR}/webmin
 
@@ -47,11 +50,11 @@ create_bind_data_dir() {
   rm -rf /etc/bind
   ln -sf "${BIND_DATA_DIR}"/etc /etc/bind
   chmod -R 0775 "${BIND_DATA_DIR}"
-  chown -R "${BIND_USER}":"${BIND_USER}" "${BIND_DATA_DIR}"
+  chown -R "${BIND_USER}":"${BIND_GROUP}" "${BIND_DATA_DIR}"
 
   if [ ! -d "${BIND_DATA_DIR}"/lib ]; then
     mkdir -p "${BIND_DATA_DIR}"/lib
-    chown "${BIND_USER}":"${BIND_USER}" "${BIND_DATA_DIR}"/lib
+    chown "${BIND_USER}":"${BIND_GROUP}" "${BIND_DATA_DIR}"/lib
   fi
   rm -rf /var/lib/bind
   ln -sf "${BIND_DATA_DIR}"/lib /var/lib/bind
@@ -81,23 +84,29 @@ enable_webmin_ssl() {
   sed -i 's/ssl=0/ssl=1/g' /etc/webmin/miniserv.conf
 }
 
+switch_systemctl_service() {
+    sed -i 's/^restart_cmd=systemctl.*/restart_cmd=service named restart/' "$WEBMIN_DATA_DIR"/etc/bind8/config
+    sed -i 's/^start_cmd=systemctl.*/start_cmd=service named start/' "$WEBMIN_DATA_DIR"/etc/bind8/config
+    sed -i 's/^stop_cmd=systemctl.*/stop_cmd=service named stop/' "$WEBMIN_DATA_DIR"/etc/bind8/config
+}
+
 set_webmin_redirect_port() {
   webmin_redirect_port_var_exists=$(grep -q "redirect_port" "/etc/webmin/miniserv.conf" ; echo $?)
-  if [ "$webmin_redirect_port_var_exists" == "1" ] 
+  if [ "$webmin_redirect_port_var_exists" == "1" ]
   then
   	echo "redirect_port=$WEBMIN_INIT_REDIRECT_PORT" >> /etc/webmin/miniserv.conf
   else
-    sed -i "s/^redirect_port.*/redirect_port=$WEBMIN_INIT_REDIRECT_PORT/" /etc/webmin/miniserv.conf  
-  fi	
+    sed -i "s/^redirect_port.*/redirect_port=$WEBMIN_INIT_REDIRECT_PORT/" /etc/webmin/miniserv.conf
+  fi
 }
 
 set_webmin_referers() {
   webmin_referers_var_exists=$(grep -q "referers=" "/etc/webmin/config" ; echo $?)
-  if [ "$webmin_referers_var_exists" == "1" ] 
-  then  
-    echo "referers=$WEBMIN_INIT_REFERERS" >> /etc/webmin/config  
+  if [ "$webmin_referers_var_exists" == "1" ]
+  then
+    echo "referers=$WEBMIN_INIT_REFERERS" >> /etc/webmin/config
   else
-    sed -i "s/^referers=.*/referers=$WEBMIN_INIT_REFERERS/" /etc/webmin/config  
+    sed -i "s/^referers=.*/referers=$WEBMIN_INIT_REFERERS/" /etc/webmin/config
   fi
 }
 
@@ -123,24 +132,24 @@ disable_webmin_redirect_ssl() {
 
 enable_webmin_redirect_ssl() {
   webmin_webprefixnoredir_var_exists=$(grep -q "webprefixnoredir=" "/etc/webmin/config" ; echo $?)
-  if [ "$webmin_webprefixnoredir_var_exists" == "1" ] 
-  then  
+  if [ "$webmin_webprefixnoredir_var_exists" == "1" ]
+  then
     echo "webprefixnoredir=1" >> /etc/webmin/config
   else
     sed -i "s/^webprefixnoredir=.*/webprefixnoredir=1/" /etc/webmin/config
   fi
 
   webmin_relative_redir_var_exists=$(grep -q "relative_redir=" "/etc/webmin/config" ; echo $?)
-  if [ "$webmin_relative_redir_var_exists" == "1" ] 
-  then  
+  if [ "$webmin_relative_redir_var_exists" == "1" ]
+  then
     echo "relative_redir=0" >> /etc/webmin/config
   else
     sed -i "s/^relative_redir=.*/relative_redir=0/" /etc/webmin/config
   fi
 
   webmin_redirect_ssl_var_exists=$(grep -q "redirect_ssl=" "/etc/webmin/miniserv.conf" ; echo $?)
-  if [ "$webmin_redirect_ssl_var_exists" == "1" ] 
-  then  
+  if [ "$webmin_redirect_ssl_var_exists" == "1" ]
+  then
     echo "redirect_ssl=1" >> /etc/webmin/miniserv.conf
   else
     sed -i "s/^redirect_ssl=.*/redirect_ssl=1/" /etc/webmin/miniserv.conf
@@ -148,20 +157,21 @@ enable_webmin_redirect_ssl() {
 }
 
 first_init() {
+    switch_systemctl_service
     set_webmin_redirect_port
     if [ "${WEBMIN_INIT_SSL_ENABLED}" == "false" ]; then
       disable_webmin_ssl
     elif [ "${WEBMIN_INIT_SSL_ENABLED}" == "true" ]; then
       enable_webmin_ssl
-    fi 
+    fi
     if [ "${WEBMIN_INIT_REFERERS}" != "NONE" ]; then
       set_webmin_referers
     fi
     if [ "${WEBMIN_INIT_REFERERS}" == "NONE" ]; then
       webmin_referers_var_exists=$(grep -q "referers=" "/etc/webmin/config" ; echo $?)
-      if [ "$webmin_referers_var_exists" != "1" ] 
-      then 
-        sed -i "/^referers=.*/d" /etc/webmin/config 
+      if [ "$webmin_referers_var_exists" != "1" ]
+      then
+        sed -i "/^referers=.*/d" /etc/webmin/config
       fi
     fi
     # Enable/disable SSL redirect after login
