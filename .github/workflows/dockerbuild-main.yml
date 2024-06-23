@@ -43,7 +43,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          push: ${{ toJSON(steps.docker-metadata.outputs.tags) != '{}' }}
+          push: ${{ steps.docker-metadata.outputs.json.tags != '[]' }}
           tags: ${{ steps.docker-metadata.outputs.tags }}
           labels: ${{ steps.docker-metadata.outputs.labels }}
           cache-from: type=registry,ref=rickyelopez/webmin-bind:latest-buildcache
