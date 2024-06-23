@@ -7,43 +7,44 @@ on:
       - 'entrypoint.sh'
     branches:
       - 'main'
+    tags:
+      - v*.*.*
   workflow_dispatch:
 jobs:
-  buildx:
-    name: Buildx Multiarch Job
+  build:
+    name: Build Multiarch Images
     runs-on: ubuntu-latest
     environment: env
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.client_payload.branch }}
       - name: Dockerhub login
-        run: echo "${{ secrets.DOCKER_PWD }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
-      - uses: rlespinasse/github-slug-action@v3.x
-      - name: Print slug variables
-        run: |
-          echo ${{ env.GITHUB_REF_SLUG }}
-          echo ${{ env.GITHUB_SHA_SHORT }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PWD }}
+
+      - name: Setup image tags
+        id: docker-metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: rickyelopez/webmin-bind
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
+
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
         with:
           version: latest
-      - name: Available platforms
-        run: echo ${{ steps.buildx.outputs.platforms }}
-      - name: Build-Push Image
-        run: |
-          docker buildx build \
-          --platform linux/amd64,linux/arm64,linux/arm/v7 \
-          --tag ${{ secrets.DOCKER_USER }}/${{ secrets.DOCKER_REPO }}:latest \
-          --tag ${{ secrets.DOCKER_USER }}/${{ secrets.DOCKER_REPO }}:${{ env.GITHUB_SHA_SHORT }} \
-          --push . \
-          --file ./Dockerfile
-      - name: Update Dockerhub Description
-        uses: peter-evans/dockerhub-description@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PWD }}
-          repository: rickyelopez/docker-webmin-bind
+          push: true
+          tags: ${{ steps.docker-metadata.outputs.tags }}
+          labels: ${{ steps.docker-metadata.outputs.labels }}
+          cache-from: type=registry,ref=rickyelopez/webmin-bind:latest-buildcache
+          cache-to: type=registry,ref=rickyelopez/webmin-bind:latest-buildcache,mode=max

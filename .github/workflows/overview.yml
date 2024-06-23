@@ -1,0 +1,20 @@
+name: Dockerhub Overview
+on:
+  push:
+    paths:
+      - README.me
+    tags:
+      - v*.*.*
+  workflow_dispatch:
+jobs:
+  overview:
+    name: Update Dockerhub Overview
+    runs-on: ubuntu-latest
+    environment: env
+    steps:
+      - name: Update Dockerhub Overview
+        uses: peter-evans/dockerhub-description@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PWD }}
+          short-description: ${{ github.event.repository.description }}
