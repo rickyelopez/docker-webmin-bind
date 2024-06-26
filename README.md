@@ -1,5 +1,7 @@
 # [rickyelopez/webmin-bind](https://hub.docker.com/r/rickyelopez/webmin-bind)
 
+[GitHub repo](https://github.com/rickyelopez/docker-webmin-bind)
+
 A fork of [elmerfds/docker-bind](https://github.com/elmerfds/docker-bind),
 which is a fork of [sameersbn/bind](https://github.com/sameersbn/docker-bind).
 This fork simply updates the ubuntu, webmin, and bind versions used for the container.
@@ -9,6 +11,22 @@ It also adds `cron` so that you can configure automatic zone resigning.
 I make no claims that it is compatible with the `elmerfds` fork, or that it is stable in any capacity.  
 Backup your configuration before switching to this image.  
 Use at your own peril.
+
+| Tag      | Description  | Build Status                                                                                                      |
+|----------|--------------|-------------------------------------------------------------------------------------------------------------------|
+|  latest  | main/stable  | ![Docker Build Main](https://github.com/rickyelopez/docker-webmin-bind/workflows/Docker%20Build%20Main/badge.svg) |
+
+## Versions
+
+| Program | Version |
+|---------|---------|
+|  bind9  | 9.18.24 |
+|  Webmin |  2.111  |
+
+You can build the dockerfile locally to select different versions if you'd like:
+```bash
+$ docker build --build-arg BIND_VERSION=<some other version> --build-arg WEBMIN_VERSION=<yet another version> .
+```
 
 ## Switching from `elmerfs/bind`
 
@@ -24,18 +42,20 @@ configuration parameters which had been deprecated in the newer version of `bind
 the log (which you can access using `docker compose logs bind --tail=20 -f`, for example) will tell you which parts of your `named.conf`
 need to be corrected.
 
-Alternatively, you could start the container and check the configuration from within it:
-```sh
-docker compose run --rm webmin_bind /bin/bash
-named-checkconf /etc/bind/named.conf
+Alternatively, you could start the container and check the configuration from within it using the following commands:
+```bash
+# start a container and get a shell in it
+$ docker compose run --rm -it webmin_bind /bin/bash
+# check the `named` config
+$ named-checkconf /etc/bind/named.conf
 ```
 
 which should tell you exactly what you need to change. For example:
 
-```sh
-docker compose run --rm webmin_bind /bin/bash
-root@bind:/# named-checkconf /etc/bind/named.conf
-/etc/bind/named.conf:12: unknown option 'dnssec-enable'
+```bash
+$ docker compose run --rm webmin_bind /bin/bash
+$ root@webmin-bind:/# named-checkconf /etc/bind/named.conf
+> /etc/bind/named.conf:12: unknown option 'dnssec-enable'
 ```
 
 ## Notes from `elmerfds`' fork:
@@ -43,12 +63,12 @@ A fork of [sameersbn/bind](https://github.com/sameersbn/docker-bind) repo, what'
 - Multiarch Support: 
   * amd64
   * armv7, arm64 i.e. supports RPi 3/4
-- Running on Ubuntu Hirsute
-- Bind: 9.16.8
-- Webmin: Always pulls latest (during image build)
+- ~Running on Ubuntu Hirsute~
+- ~Bind: 9.16.8~
+- ~Webmin: Always pulls latest (during image build)~
 - Added Timezone (TZ) support
-- Image auto-builds on schedule (every Sat 00:00 BST)
-- Ubuntu updates will be applied during each scheduled build
+- ~Image auto-builds on schedule (every Sat 00:00 BST)~
+- ~Ubuntu updates will be applied during each scheduled build~
 - Reverse Proxy friendly ([utkuozdemir/docker-bind](https://github.com/utkuozdemir/docker-bind/tree/webmin-reverse-proxy-config))
 - Fixes to [utkuozdemir/docker-bind](https://github.com/utkuozdemir/docker-bind/tree/webmin-reverse-proxy-config)'s 'Reverse Proxy friendly' update.
   * Cleanup of config & miniserv.conf when variables are used & then removed
@@ -67,12 +87,6 @@ Docker container image for [BIND](https://www.isc.org/downloads/bind/) DNS serve
 BIND is open source software that implements the Domain Name System (DNS) protocols for the Internet. It is a reference implementation of those protocols, but it is also production-grade software, suitable for use in high-volume and high-reliability applications.
 
 # Getting started
-
-**Tags**
-
-| Tag      | Description  | Build Status                                                                                                      |
-| ---------|--------------|-------------------------------------------------------------------------------------------------------------------|
-|  latest  | main/stable  | ![Docker Build Main](https://github.com/rickyelopez/docker-webmin-bind/workflows/Docker%20Build%20Main/badge.svg) |
 
 ## Installation
 
@@ -93,9 +107,9 @@ docker build -t rickyelopez/webmin-bind github.com/rickyelopez/docker-webmin-bin
 Docker Run:
 
 ```bash
-docker run --name bind -d --restart=always \
+docker run --name bind -d --restart=unless-stopped \
   -p 53:53/tcp -p 53:53/udp -p 10000:10000/tcp \
-  -v /path/to/bind/data:/data \
+  -v /path/to/persistent/data/dir:/data \
   rickyelopez/webmin-bind
 ```
 
@@ -115,7 +129,7 @@ Docker Compose
             - "53:53/udp"
             - 10000:10000/tcp
         volumes:
-            - /path/to/bind/data:/data
+            - /path/to/persistent/data/dir:/data
         environment:
             - WEBMIN_ENABLED=true
             - WEBMIN_INIT_SSL_ENABLED=false
