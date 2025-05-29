@@ -7,21 +7,21 @@ set -e
 # (will allow for "$XYZ_DB_PASSWORD_FILE" to fill in the value of
 #  "$XYZ_DB_PASSWORD" from a file, especially for Docker's secrets feature)
 file_env() {
-	local var="$1"
-	local fileVar="${var}_FILE"
-	local def="${2:-}"
-	if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
-		echo >&2 "error: both $var and $fileVar are set (but are exclusive)"
-		exit 1
-	fi
-	local val="$def"
-	if [ "${!var:-}" ]; then
-		val="${!var}"
-	elif [ "${!fileVar:-}" ]; then
-		val="$(< "${!fileVar}")"
-	fi
-	export "$var"="$val"
-	unset "$fileVar"
+    local var="$1"
+    local fileVar="${var}_FILE"
+    local def="${2:-}"
+    if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
+        echo >&2 "error: both $var and $fileVar are set (but are exclusive)"
+        exit 1
+    fi
+    local val="$def"
+    if [ "${!var:-}" ]; then
+        val="${!var}"
+    elif [ "${!fileVar:-}" ]; then
+        val="$(<"${!fileVar}")"
+    fi
+    export "$var"="$val"
+    unset "$fileVar"
 }
 
 file_env 'ROOT_PASSWORD'
@@ -41,47 +41,47 @@ BIND_DATA_DIR=${DATA_DIR}/bind
 WEBMIN_DATA_DIR=${DATA_DIR}/webmin
 
 create_bind_data_dir() {
-  mkdir -p "${BIND_DATA_DIR}"
+    mkdir -p "${BIND_DATA_DIR}"
 
-  # populate default bind configuration if it does not exist
-  if [ ! -d "${BIND_DATA_DIR}"/etc ]; then
-    mv /etc/bind "${BIND_DATA_DIR}"/etc
-  fi
-  rm -rf /etc/bind
-  ln -sf "${BIND_DATA_DIR}"/etc /etc/bind
-  chmod -R 0775 "${BIND_DATA_DIR}"
-  chown -R "${BIND_USER}":"${BIND_GROUP}" "${BIND_DATA_DIR}"
+    # populate default bind configuration if it does not exist
+    if [ ! -d "${BIND_DATA_DIR}"/etc ]; then
+        mv /etc/bind "${BIND_DATA_DIR}"/etc
+    fi
+    rm -rf /etc/bind
+    ln -sf "${BIND_DATA_DIR}"/etc /etc/bind
+    chmod -R 0775 "${BIND_DATA_DIR}"
+    chown -R "${BIND_USER}":"${BIND_GROUP}" "${BIND_DATA_DIR}"
 
-  if [ ! -d "${BIND_DATA_DIR}"/lib ]; then
-    mkdir -p "${BIND_DATA_DIR}"/lib
-    chown "${BIND_USER}":"${BIND_GROUP}" "${BIND_DATA_DIR}"/lib
-  fi
-  rm -rf /var/lib/bind
-  ln -sf "${BIND_DATA_DIR}"/lib /var/lib/bind
-  mkdir -p "${BIND_DATA_DIR}"/etc/logs
-  touch "${BIND_DATA_DIR}"/etc/logs/named.log
+    if [ ! -d "${BIND_DATA_DIR}"/lib ]; then
+        mkdir -p "${BIND_DATA_DIR}"/lib
+        chown "${BIND_USER}":"${BIND_GROUP}" "${BIND_DATA_DIR}"/lib
+    fi
+    rm -rf /var/lib/bind
+    ln -sf "${BIND_DATA_DIR}"/lib /var/lib/bind
+    mkdir -p "${BIND_DATA_DIR}"/etc/logs
+    touch "${BIND_DATA_DIR}"/etc/logs/named.log
 
 }
 
 create_webmin_data_dir() {
-  mkdir -p "${WEBMIN_DATA_DIR}"
-  chmod -R 0755 "${WEBMIN_DATA_DIR}"
-  chown -R root:root "${WEBMIN_DATA_DIR}"
+    mkdir -p "${WEBMIN_DATA_DIR}"
+    chmod -R 0755 "${WEBMIN_DATA_DIR}"
+    chown -R root:root "${WEBMIN_DATA_DIR}"
 
-  # populate the default webmin configuration if it does not exist
-  if [ ! -d "${WEBMIN_DATA_DIR}"/etc ]; then
-    mv /etc/webmin "${WEBMIN_DATA_DIR}"/etc
-  fi
-  rm -rf /etc/webmin
-  ln -sf "${WEBMIN_DATA_DIR}"/etc /etc/webmin
+    # populate the default webmin configuration if it does not exist
+    if [ ! -d "${WEBMIN_DATA_DIR}"/etc ]; then
+        mv /etc/webmin "${WEBMIN_DATA_DIR}"/etc
+    fi
+    rm -rf /etc/webmin
+    ln -sf "${WEBMIN_DATA_DIR}"/etc /etc/webmin
 }
 
 disable_webmin_ssl() {
-  sed -i 's/ssl=1/ssl=0/g' /etc/webmin/miniserv.conf
+    sed -i 's/ssl=1/ssl=0/g' /etc/webmin/miniserv.conf
 }
 
 enable_webmin_ssl() {
-  sed -i 's/ssl=0/ssl=1/g' /etc/webmin/miniserv.conf
+    sed -i 's/ssl=0/ssl=1/g' /etc/webmin/miniserv.conf
 }
 
 switch_systemctl_service() {
@@ -91,94 +91,106 @@ switch_systemctl_service() {
 }
 
 set_webmin_redirect_port() {
-  webmin_redirect_port_var_exists=$(grep -q "redirect_port" "/etc/webmin/miniserv.conf" ; echo $?)
-  if [ "$webmin_redirect_port_var_exists" == "1" ]
-  then
-  	echo "redirect_port=$WEBMIN_INIT_REDIRECT_PORT" >> /etc/webmin/miniserv.conf
-  else
-    sed -i "s/^redirect_port.*/redirect_port=$WEBMIN_INIT_REDIRECT_PORT/" /etc/webmin/miniserv.conf
-  fi
+    webmin_redirect_port_var_exists=$(
+        grep -q "redirect_port" "/etc/webmin/miniserv.conf"
+        echo $?
+    )
+    if [ "$webmin_redirect_port_var_exists" == "1" ]; then
+        echo "redirect_port=$WEBMIN_INIT_REDIRECT_PORT" >>/etc/webmin/miniserv.conf
+    else
+        sed -i "s/^redirect_port.*/redirect_port=$WEBMIN_INIT_REDIRECT_PORT/" /etc/webmin/miniserv.conf
+    fi
 }
 
 set_webmin_referers() {
-  webmin_referers_var_exists=$(grep -q "referers=" "/etc/webmin/config" ; echo $?)
-  if [ "$webmin_referers_var_exists" == "1" ]
-  then
-    echo "referers=$WEBMIN_INIT_REFERERS" >> /etc/webmin/config
-  else
-    sed -i "s/^referers=.*/referers=$WEBMIN_INIT_REFERERS/" /etc/webmin/config
-  fi
+    webmin_referers_var_exists=$(
+        grep -q "referers=" "/etc/webmin/config"
+        echo $?
+    )
+    if [ "$webmin_referers_var_exists" == "1" ]; then
+        echo "referers=$WEBMIN_INIT_REFERERS" >>/etc/webmin/config
+    else
+        sed -i "s/^referers=.*/referers=$WEBMIN_INIT_REFERERS/" /etc/webmin/config
+    fi
 }
 
 set_root_passwd() {
-  echo "root:$ROOT_PASSWORD" | chpasswd
+    echo "root:$ROOT_PASSWORD" | chpasswd
 }
 
 create_pid_dir() {
-  mkdir -m 0775 -p /var/run/named
-  chown root:"${BIND_USER}" /var/run/named
+    mkdir -m 0775 -p /var/run/named
+    chown root:"${BIND_USER}" /var/run/named
 }
 
 create_bind_cache_dir() {
-  mkdir -m 0775 -p /var/cache/bind
-  chown root:"${BIND_USER}" /var/cache/bind
+    mkdir -m 0775 -p /var/cache/bind
+    chown root:"${BIND_USER}" /var/cache/bind
 }
 
 disable_webmin_redirect_ssl() {
-  sed -i '/webprefixnoredir=1/d' /etc/webmin/config
-  sed -i '/relative_redir=0/d' /etc/webmin/config
-  sed -i '/redirect_ssl=1/d' /etc/webmin/miniserv.conf
+    sed -i '/webprefixnoredir=1/d' /etc/webmin/config
+    sed -i '/relative_redir=0/d' /etc/webmin/config
+    sed -i '/redirect_ssl=1/d' /etc/webmin/miniserv.conf
 }
 
 enable_webmin_redirect_ssl() {
-  webmin_webprefixnoredir_var_exists=$(grep -q "webprefixnoredir=" "/etc/webmin/config" ; echo $?)
-  if [ "$webmin_webprefixnoredir_var_exists" == "1" ]
-  then
-    echo "webprefixnoredir=1" >> /etc/webmin/config
-  else
-    sed -i "s/^webprefixnoredir=.*/webprefixnoredir=1/" /etc/webmin/config
-  fi
+    webmin_webprefixnoredir_var_exists=$(
+        grep -q "webprefixnoredir=" "/etc/webmin/config"
+        echo $?
+    )
+    if [ "$webmin_webprefixnoredir_var_exists" == "1" ]; then
+        echo "webprefixnoredir=1" >>/etc/webmin/config
+    else
+        sed -i "s/^webprefixnoredir=.*/webprefixnoredir=1/" /etc/webmin/config
+    fi
 
-  webmin_relative_redir_var_exists=$(grep -q "relative_redir=" "/etc/webmin/config" ; echo $?)
-  if [ "$webmin_relative_redir_var_exists" == "1" ]
-  then
-    echo "relative_redir=0" >> /etc/webmin/config
-  else
-    sed -i "s/^relative_redir=.*/relative_redir=0/" /etc/webmin/config
-  fi
+    webmin_relative_redir_var_exists=$(
+        grep -q "relative_redir=" "/etc/webmin/config"
+        echo $?
+    )
+    if [ "$webmin_relative_redir_var_exists" == "1" ]; then
+        echo "relative_redir=0" >>/etc/webmin/config
+    else
+        sed -i "s/^relative_redir=.*/relative_redir=0/" /etc/webmin/config
+    fi
 
-  webmin_redirect_ssl_var_exists=$(grep -q "redirect_ssl=" "/etc/webmin/miniserv.conf" ; echo $?)
-  if [ "$webmin_redirect_ssl_var_exists" == "1" ]
-  then
-    echo "redirect_ssl=1" >> /etc/webmin/miniserv.conf
-  else
-    sed -i "s/^redirect_ssl=.*/redirect_ssl=1/" /etc/webmin/miniserv.conf
-  fi
+    webmin_redirect_ssl_var_exists=$(
+        grep -q "redirect_ssl=" "/etc/webmin/miniserv.conf"
+        echo $?
+    )
+    if [ "$webmin_redirect_ssl_var_exists" == "1" ]; then
+        echo "redirect_ssl=1" >>/etc/webmin/miniserv.conf
+    else
+        sed -i "s/^redirect_ssl=.*/redirect_ssl=1/" /etc/webmin/miniserv.conf
+    fi
 }
 
 first_init() {
     switch_systemctl_service
     set_webmin_redirect_port
     if [ "${WEBMIN_INIT_SSL_ENABLED}" == "false" ]; then
-      disable_webmin_ssl
+        disable_webmin_ssl
     elif [ "${WEBMIN_INIT_SSL_ENABLED}" == "true" ]; then
-      enable_webmin_ssl
+        enable_webmin_ssl
     fi
     if [ "${WEBMIN_INIT_REFERERS}" != "NONE" ]; then
-      set_webmin_referers
+        set_webmin_referers
     fi
     if [ "${WEBMIN_INIT_REFERERS}" == "NONE" ]; then
-      webmin_referers_var_exists=$(grep -q "referers=" "/etc/webmin/config" ; echo $?)
-      if [ "$webmin_referers_var_exists" != "1" ]
-      then
-        sed -i "/^referers=.*/d" /etc/webmin/config
-      fi
+        webmin_referers_var_exists=$(
+            grep -q "referers=" "/etc/webmin/config"
+            echo $?
+        )
+        if [ "$webmin_referers_var_exists" != "1" ]; then
+            sed -i "/^referers=.*/d" /etc/webmin/config
+        fi
     fi
     # Enable/disable SSL redirect after login
     if [ "${WEBMIN_INIT_REDIRECT_SSL}" == "false" ]; then
-      disable_webmin_redirect_ssl
+        disable_webmin_redirect_ssl
     elif [ "${WEBMIN_INIT_REDIRECT_SSL}" == "true" ]; then
-      enable_webmin_redirect_ssl
+        enable_webmin_redirect_ssl
     fi
 }
 
@@ -188,31 +200,31 @@ create_bind_cache_dir
 
 # allow arguments to be passed to named
 if [[ ${1:0:1} = '-' ]]; then
-  EXTRA_ARGS="$*"
-  set --
+    EXTRA_ARGS="$*"
+    set --
 elif [[ ${1} == named || ${1} == $(type -p named) ]]; then
-  EXTRA_ARGS="${*:2}"
-  set --
+    EXTRA_ARGS="${*:2}"
+    set --
 fi
 
 # default behaviour is to launch named
 if [[ -z ${1} ]]; then
-  if [ "${WEBMIN_ENABLED}" == "true" ]; then
-    create_webmin_data_dir
-    first_init
-    set_root_passwd
-    echo '---------------------'
-    echo '|  Starting Webmin  |'
-    echo '---------------------'
-    /etc/init.d/webmin start
-  fi
+    if [ "${WEBMIN_ENABLED}" == "true" ]; then
+        create_webmin_data_dir
+        first_init
+        set_root_passwd
+        echo '---------------------'
+        echo '|  Starting Webmin  |'
+        echo '---------------------'
+        /etc/init.d/webmin start
+    fi
 
-  echo
-  echo '---------------------'
-  echo '|  Starting named   |'
-  echo '---------------------'
-  echo
-  exec "$(type -p named)" -u ${BIND_USER} ${BIND_EXTRA_FLAGS} -c /etc/bind/named.conf ${EXTRA_ARGS}
+    echo
+    echo '---------------------'
+    echo '|  Starting named   |'
+    echo '---------------------'
+    echo
+    exec "$(type -p named)" -u ${BIND_USER} ${BIND_EXTRA_FLAGS} -c /etc/bind/named.conf ${EXTRA_ARGS}
 else
-  exec "$@"
+    exec "$@"
 fi
