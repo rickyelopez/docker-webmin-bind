@@ -16,12 +16,12 @@ Use at your own peril.
 |----------|--------------|-------------------------------------------------------------------------------------------------------------------|
 |  latest  | main/stable  | ![Docker Build Main](https://github.com/rickyelopez/docker-webmin-bind/workflows/Docker%20Build%20Main/badge.svg) |
 
-## Versions
+## Version Map
 
-| Program | Version |
-|---------|---------|
-|  bind9  | 9.18.24 |
-|  Webmin |  2.111  |
+| Container Version | ubuntu Version |bind9 Version | Webmin Version |
+|-------------------|----------------|--------------|----------------|
+|      v0.2.x       | noble-20250404 |   9.18.30    |      2.400     |
+|      v0.1.x       | noble-20240605 |   9.18.24    |      2.111     |
 
 You can build the dockerfile locally to select different versions if you'd like:
 ```bash
